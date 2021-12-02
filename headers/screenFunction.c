@@ -88,10 +88,10 @@ void metronomeBPMValue(uint8_t *Flag){
         MAP_ADC14_toggleConversionTrigger();
         printf("\t\t%d\n",*Flag);
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-    Graphics_drawStringCentered(&g_sContext,(int8_t *)"100",AUTO_STRING_LENGTH,64,64,OPAQUE_TEXT);
+    Graphics_drawStringCentered(&g_sContext,(int8_t *)incrementBPMValue(Flag),AUTO_STRING_LENGTH,64,64,OPAQUE_TEXT);
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
     selectedDigit(*Flag);
-}
+    }
 }
 
 void selectedDigit(uint8_t Flag){
@@ -126,6 +126,17 @@ void selectedDigit(uint8_t Flag){
     }
     }
 
+int incrementBPMvalue(uint8_t Flag){
+    int8_t printedBPM;
+    if(Flag & BIT4){
+       printedBPM += selectedOptionFLag - BIT4;
+    }if(Flag & BIT5){
+       printedBPM += 10*(selectedOptionFLag - BIT5);
+    }if(Flag & BIT6){
+       printedBPM += 100*(selectedOptionFlag - BIT6);
+    }
+    return printedBPM;
+}
 
 /*per disegnare barre grosse [precisone del tuner]*/
 

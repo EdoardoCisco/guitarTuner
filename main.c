@@ -191,55 +191,56 @@ void main(void) {
   }
 }
 
-void ADC14_IRQHandler(void) {
-  uint64_t status;
-  int i;
-  status = ADC14_getEnabledInterruptStatus();
-  ADC14_clearInterruptFlag(status);
+void ADC14_IRQHandler(void)
+{
+    uint64_t status;
+    int i;
+    status = ADC14_getEnabledInterruptStatus();
+    ADC14_clearInterruptFlag(status);
 
-  /* ADC_MEM1 conversion completed */
-  if (status & ADC_INT1) {
-    /* Store ADC14 conversion results */
-    resultBuffer[0] = ADC14_getResult(ADC_MEM0); // left/right
-    resultBuffer[1] = ADC14_getResult(ADC_MEM1); // up/down
+    /* ADC_MEM1 conversion completed */
+    if(status & ADC_INT1)
+    {
+        /* Store ADC14 conversion results */
+        resultBuffer[0] = ADC14_getResult(ADC_MEM0); // left/right
+        resultBuffer[1] = ADC14_getResult(ADC_MEM1); // up/down
 
-    if (resultBuffer[1] > 14000) {
-      if (selectedOptionFlag < 2) {
-        selectedOptionFlag &= ~BIT0;
-      } else if (selectedOptionFlag & BIT6 | BIT5 | BIT4) { // problem
-        selectedOptionFlag += 1;
-      }
-    } else if (resultBuffer[1] < 2000) {
-      if (selectedOptionFlag < 2) {
-        selectedOptionFlag |= BIT0;
-      } else if (selectedOptionFlag & BIT6 | BIT5 | BIT4) { // problem
-        selectedOptionFlag -= 1;
-      }
-      /*left right ok*/
-    } else if (resultBuffer[0] > 14000 && selectedOptionFlag > 3) {
-      if (selectedOptionFlag & BIT6) {
-        selectedOptionFlag ^= BIT6;
-        selectedOptionFlag |= BIT5;
+        if(resultBuffer[1]>14000){
+            if(selectedOptionFlag < 2){
+                selectedOptionFlag &= ~BIT0;
+            }else if(selectedOptionFlag & BIT3){ //problem
+                selectedOptionFlag++;
+            }
+        }else if(resultBuffer[1]<2000){
+            if(selectedOptionFlag < 2){
+                selectedOptionFlag |= BIT0;
+            }else if(selectedOptionFlag & BIT3){ //problem
+                selectedOptionFlag--;
+            }
+        }
+   /*left right ok*/
+        }else if (resultBuffer[0]>14000 && selectedOptionFlag > 3){
+            if(selectedOptionFlag & BIT6){
+                selectedOptionFlag = 32;
+            }
+            else if(selectedOptionFlag & BIT5){
+                selectedOptionFlag = 64;
 
-      } else if (selectedOptionFlag & BIT5) {
-        selectedOptionFlag ^= BIT5;
-        selectedOptionFlag |= BIT4;
-      }
-    } else if (resultBuffer[0] < 2000 && selectedOptionFlag > 3) {
+            }
+        }else if (resultBuffer[0]<2000 && selectedOptionFlag > 3){
 
-      if ((selectedOptionFlag & BIT4)) {
-        selectedOptionFlag ^= BIT4;
-        selectedOptionFlag |= BIT5;
+            if((selectedOptionFlag & BIT4) ){
+                selectedOptionFlag = 32;
 
-      } else if ((selectedOptionFlag & BIT5)) {
-        selectedOptionFlag ^= BIT5;
-        selectedOptionFlag |= BIT6;
-      }
+           }else if((selectedOptionFlag & BIT5) ){
+                selectedOptionFlag = 16;
+           }
+        }
+for(i=0;i<60000;++i); //use  timer module delay
     }
-    for (i = 0; i < 60000; ++i)
-      ; // use  timer module delay
-  }
+
 }
+
 
 /*handler for port 3 pin 5 [paly pause buton ]*/
 void PORT3_IRQHandler(void) {

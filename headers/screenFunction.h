@@ -9,8 +9,10 @@ void cleanScreen();
 void printChoice();
 void selectOption(uint8_t);
 
+void incrementBPMvalue(const uint8_t);
 void metronomeBPMValue(uint8_t *);
-void selectedDigit(uint8_t);
+void selectedDigit(const uint8_t);
+
 
 void drawBar(uint8_t *);
 

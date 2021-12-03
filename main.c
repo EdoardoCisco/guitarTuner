@@ -166,10 +166,6 @@ void main(void) {
   */
   printChoice();
   while (1) {
-    //	    PCM_gotoLPM0();
-    //	    MAP_ADC14_toggleConversionTrigger();
-    //	    printf("ciao2 %d\n",selectedOptionFlag);
-    // printf("\t%d\n",selectedOptionFlag);
     switch (selectedOptionFlag) {
     case 0:
       selectOption(selectedOptionFlag);
@@ -193,7 +189,7 @@ void main(void) {
 
 void ADC14_IRQHandler(void) {
   uint64_t status;
-  int i;
+   int i;
   status = ADC14_getEnabledInterruptStatus();
   ADC14_clearInterruptFlag(status);
 
@@ -202,68 +198,73 @@ void ADC14_IRQHandler(void) {
     /* Store ADC14 conversion results */
     resultBuffer[0] = ADC14_getResult(ADC_MEM0); // left/right
     resultBuffer[1] = ADC14_getResult(ADC_MEM1); // up/down
-
+    selectedOptionFlag &= ~BIT2;
+    selectedOptionFlag &= ~BIT3;
     if (resultBuffer[1] > 14000) {
       if (selectedOptionFlag < 2) {
         selectedOptionFlag &= ~BIT0;
       } else if (selectedOptionFlag & BIT6 | BIT5 | BIT4) { // problem
-        selectedOptionFlag += 1;
+        selectedOptionFlag |= BIT2;
       }
     } else if (resultBuffer[1] < 2000) {
       if (selectedOptionFlag < 2) {
         selectedOptionFlag |= BIT0;
       } else if (selectedOptionFlag & BIT6 | BIT5 | BIT4) { // problem
-        selectedOptionFlag -= 1;
+        selectedOptionFlag |= BIT3;
       }
       /*left right ok*/
-    } else if (resultBuffer[0] > 14000 && selectedOptionFlag > 3) {
-      if (selectedOptionFlag & BIT6) {
-        selectedOptionFlag ^= BIT6;
-        selectedOptionFlag |= BIT5;
+    } else if (resultBuffer[0] > 14000) {
+      if (selectedOptionFlag > 3) {
 
-      } else if (selectedOptionFlag & BIT5) {
-        selectedOptionFlag ^= BIT5;
-        selectedOptionFlag |= BIT4;
+        if (selectedOptionFlag & BIT6) {
+          selectedOptionFlag |= BIT5;
+          selectedOptionFlag ^= BIT6;
+
+        } else if (selectedOptionFlag & BIT5) {
+          selectedOptionFlag |= BIT4;
+          selectedOptionFlag ^= BIT5;
+        }
       }
-    } else if (resultBuffer[0] < 2000 && selectedOptionFlag > 3) {
+    } else if (resultBuffer[0] < 2000) {
+      if (selectedOptionFlag > 3) {
 
-      if ((selectedOptionFlag & BIT4)) {
-        selectedOptionFlag ^= BIT4;
-        selectedOptionFlag |= BIT5;
+        if ((selectedOptionFlag & BIT4)) {
+          selectedOptionFlag |= BIT5;
+          selectedOptionFlag ^= BIT4;
 
-      } else if ((selectedOptionFlag & BIT5)) {
-        selectedOptionFlag ^= BIT5;
-        selectedOptionFlag |= BIT6;
+        } else if ((selectedOptionFlag & BIT5)) {
+          selectedOptionFlag |= BIT6;
+          selectedOptionFlag ^= BIT5;
+        }
       }
     }
-    for (i = 0; i < 60000; ++i)
-      ; // use  timer module delay
+     for(i=0;i<300000;++i); //use  timer module delay
   }
 }
 
-/*handler for port 3 pin 5 [paly pause buton ]*/
-void PORT3_IRQHandler(void) {
-  uint_fast16_t status = GPIO_getEnabledInterruptStatus(GPIO_PORT_P3);
-  GPIO_clearInterruptFlag(GPIO_PORT_P3, status);
-  if (status & GPIO_PIN5 && selectedOptionFlag > 6) {
-    selectedOptionFlag ^= BIT7;
+  /*handler for port 3 pin 5 [paly pause buton ]*/
+  void PORT3_IRQHandler(void) {
+    uint_fast16_t status = GPIO_getEnabledInterruptStatus(GPIO_PORT_P3);
+    GPIO_clearInterruptFlag(GPIO_PORT_P3, status);
+    if (status & GPIO_PIN5 && selectedOptionFlag > 6) {
+      selectedOptionFlag ^= BIT7;
+    }
   }
-}
 
-/*handler for port 4 pin 1 [joistick selection]*/
-void PORT4_IRQHandler(void) {
-  uint_fast16_t status = GPIO_getEnabledInterruptStatus(GPIO_PORT_P4);
-  GPIO_clearInterruptFlag(GPIO_PORT_P4, status);
-  if (status & GPIO_PIN1 && selectedOptionFlag < 3) {
-    selectedOptionFlag |= BIT6;
+  /*handler for port 4 pin 1 [joistick selection]*/
+  void PORT4_IRQHandler(void) {
+    uint_fast16_t status = GPIO_getEnabledInterruptStatus(GPIO_PORT_P4);
+    GPIO_clearInterruptFlag(GPIO_PORT_P4, status);
+    if (status & GPIO_PIN1 && selectedOptionFlag < 3) {
+      selectedOptionFlag |= BIT6;
+    }
   }
-}
 
-/*handler for port 5 pin 1 button [back option];*/
-void PORT5_IRQHandler(void) {
-  uint_fast16_t status = GPIO_getEnabledInterruptStatus(GPIO_PORT_P5);
-  GPIO_clearInterruptFlag(GPIO_PORT_P5, status);
-  if (status & GPIO_PIN1 && selectedOptionFlag > 3) {
-    selectedOptionFlag = 0;
+  /*handler for port 5 pin 1 button [back option];*/
+  void PORT5_IRQHandler(void) {
+    uint_fast16_t status = GPIO_getEnabledInterruptStatus(GPIO_PORT_P5);
+    GPIO_clearInterruptFlag(GPIO_PORT_P5, status);
+    if (status & GPIO_PIN1 && selectedOptionFlag > 3) {
+      selectedOptionFlag = 0;
+    }
   }
-}

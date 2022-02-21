@@ -1,5 +1,5 @@
 # Guitar Tuner 🎸🎵
-This project was created by [@CiscoEdoardo](https://github.com/edo98) and [@CollizzolliLeonardo](https://github.com/leocolliz) for an assignment that we are currently completing for the project Embedded Software for the Internet of Things Unitn course 2021/2022. Using a microcontroller we made a simple device that you can use to tune a guitar or use it as a metronome.
+This project was created by [@CiscoEdoardo](https://github.com/EdoardoCisco) and [@CollizzolliLeonardo](https://github.com/leocolliz) for an assignment that we are currently completing for the project Embedded Software for the Internet of Things Unitn course 2021/2022. Using a microcontroller we made a simple device that you can use to tune a guitar or use it as a metronome.
 
 ## Hardware 🛠️
 **MSP-EXP432P401R**<br/>

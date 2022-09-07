@@ -106,8 +106,12 @@ const Timer_A_UpModeConfig upBuzzer = {
         TIMER_A_DO_CLEAR                       
         };
 
-/* rectangle for Tuner*/
+/* rectangle for screen*/
 const Graphics_Rectangle cleanMet = {38, 88, 84, 96};
+const Graphics_Rectangle unitDigit = {81, 88, 83, 96};
+const Graphics_Rectangle tensDigit = {59, 88, 61, 96};
+const Graphics_Rectangle hundredsDigit = {38, 88, 40, 96};
+
 const Graphics_Rectangle barRedLeft = { 5, 82, 15, 94};
 const Graphics_Rectangle barRedRight = {113, 82, 123, 94};
 const Graphics_Rectangle barYellowLeft = {20, 72, 32, 104};
@@ -511,43 +515,25 @@ void selectedDigit(){
         Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
 
      }else if(selectedOptionFlag & BIT3){// centinaia
-        Graphics_drawLineV(&g_sContext, 38, 88, 96);
-        Graphics_drawLineV(&g_sContext, 39, 88, 96);
-        Graphics_drawLineV(&g_sContext, 40, 88, 96);
+        Graphics_fillRectangle(&g_sContext, &hundredsDigit);
         Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-        Graphics_drawLine(&g_sContext, 59, 88, 83, 96);
-        Graphics_drawLineV(&g_sContext, 60, 88, 96);
-        Graphics_drawLineV(&g_sContext, 61, 88, 96);
-        Graphics_drawLineV(&g_sContext, 81, 88, 96);
-        Graphics_drawLineV(&g_sContext, 82, 88, 96);
-        Graphics_drawLineV(&g_sContext, 83, 88, 96);
+        Graphics_fillRectangle(&g_sContext, &tensDigit);
+        Graphics_fillRectangle(&g_sContext, &unitDigit);
         Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
 
     }else if(selectedOptionFlag & BIT4){// decine
-        Graphics_drawLineV(&g_sContext, 59, 88, 96);
-        Graphics_drawLineV(&g_sContext, 60, 88, 96);
-        Graphics_drawLineV(&g_sContext, 61, 88, 96);
+
+        Graphics_fillRectangle(&g_sContext, &tensDigit);
         Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-        Graphics_drawLineV(&g_sContext, 38, 88, 96);
-        Graphics_drawLineV(&g_sContext, 39, 88, 96);
-        Graphics_drawLineV(&g_sContext, 40, 88, 96);
-        Graphics_drawLineV(&g_sContext, 81, 88, 96);
-        Graphics_drawLineV(&g_sContext, 82, 88, 96);
-        Graphics_drawLineV(&g_sContext, 83, 88, 96);
+        Graphics_fillRectangle(&g_sContext, &hundredsDigit);
+        Graphics_fillRectangle(&g_sContext, &unitDigit);
         Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
 
-
     }else if(selectedOptionFlag & BIT5){// unita
-        Graphics_drawLineV(&g_sContext, 81, 88, 96);
-        Graphics_drawLineV(&g_sContext, 82, 88, 96);
-        Graphics_drawLineV(&g_sContext, 83, 88, 96);
+        Graphics_fillRectangle(&g_sContext, &unitDigit);
         Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-        Graphics_drawLine(&g_sContext, 38, 88, 61, 96);
-        Graphics_drawLineV(&g_sContext, 39, 88, 96);
-        Graphics_drawLineV(&g_sContext, 40, 88, 96);
-        Graphics_drawLineV(&g_sContext, 59, 88, 96);
-        Graphics_drawLineV(&g_sContext, 60, 88, 96);
-        Graphics_drawLineV(&g_sContext, 61, 88, 96);
+        Graphics_fillRectangle(&g_sContext, &hundredsDigit);
+        Graphics_fillRectangle(&g_sContext, &tensDigit);
         Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
 
     }

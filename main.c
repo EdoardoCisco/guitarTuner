@@ -25,12 +25,13 @@ uint32_t fftSize = SAMPLE_LENGTH;
 uint32_t ifftFlag = 0;
 uint32_t doBitReverse = 1;
 volatile arm_status status;
-uint32_t maxIndex = 0;
-/* Graphic library context */
-Graphics_Context g_sContext;
+//uint32_t maxIndex = 0;
 
 #define SMCLK_FREQUENCY     24000000 
 #define SAMPLE_FREQUENCY    700 
+
+/* Graphic library context */
+Graphics_Context g_sContext;
 
 /* DMA Control Table */
 #if defined(__TI_COMPILER_VERSION__)
@@ -52,10 +53,12 @@ int16_t data_input[SAMPLE_LENGTH * 2];
 int16_t data_output[SAMPLE_LENGTH];
 
 volatile int switch_data = 0;
+/*---------------------------------------------------
+----------------------------------------------------*/
 
 /* flag moving*/
 uint8_t selectedOptionFlag=0;
-uint8_t OldFlag;
+uint8_t OldFlag=0;
 
 /*screen*/
 Graphics_Context g_sContext;
@@ -133,10 +136,9 @@ void selectedDigit();
 void buzz();
 
 /* Tuner control*/
-char noteDetection();//rw
-int noteCorrection(char);//rw
-void drawNote();//ne
-void drawBar();//rw
+void noteDetection();
+int8_t noteCorrection(char, float32_t);
+void drawBar(int8_t);
 void hannConfig();
 
 /* Handlers */
@@ -150,12 +152,15 @@ void TA1_N_IRQHanlder(void);
 
 
 void _adcInit() {
-  /* Configures Pin 6.0 and 4.4 as ADC input */
-  GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P6, GPIO_PIN0,
-                                             GPIO_TERTIARY_MODULE_FUNCTION);
-  GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4, GPIO_PIN4,
-                                             GPIO_TERTIARY_MODULE_FUNCTION);
 
+   // ADC14_disableConversion();
+//    ADC14_disableModule();
+  /* Configures Pin 6.0 and 4.4 as ADC input */
+   GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P6, GPIO_PIN0,
+                                              GPIO_TERTIARY_MODULE_FUNCTION);
+   GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4, GPIO_PIN4,
+                                              GPIO_TERTIARY_MODULE_FUNCTION);
+// 
   /* Initializing ADC (ADCOSC/64/8) */
   ADC14_enableModule();
   ADC14_initModule(ADC_CLOCKSOURCE_HSMCLK, ADC_PREDIVIDER_64, ADC_DIVIDER_8, 0);
@@ -191,6 +196,12 @@ void setHandlersGPIO() {
   // port 3.5 button down
   // port 4.1 joystik selection
   // port 5.1 button back
+
+  /* Configures Pin 6.0 and 4.4 as ADC input */
+//  GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P6, GPIO_PIN0,
+//                                             GPIO_TERTIARY_MODULE_FUNCTION);
+//  GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4, GPIO_PIN4,
+//                                             GPIO_TERTIARY_MODULE_FUNCTION);
 
   /*set port 3 pin 5 */
   GPIO_setAsOutputPin(GPIO_PORT_P3, GPIO_PIN5);
@@ -257,20 +268,29 @@ void _graphicsInit(){
 
 }
 
-void _dmaInit()
-{
-   Timer_A_generatePWM(TIMER_A2_BASE, &pwmConfig);
+void _adcDmaInit(){
+   // ADC14_disableInterrupt(ADC_INT1);
+   // ADC14_disableConversion();
+   // ADC14_disableModule();
+  /* Configuring GPIOs (4.3 A10) */
+ GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4, GPIO_PIN3, GPIO_TERTIARY_MODULE_FUNCTION);
     /* Initializing ADC (MCLK/1/1) */
+    Timer_A_generatePWM(TIMER_A2_BASE, &pwmConfig);
  ADC14_enableModule();
  ADC14_initModule(ADC_CLOCKSOURCE_MCLK, ADC_PREDIVIDER_1, ADC_DIVIDER_1, 0);
  ADC14_setSampleHoldTrigger(ADC_TRIGGER_SOURCE5, false);
-  /* Configuring GPIOs (4.3 A10) */
- GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4, GPIO_PIN3, GPIO_TERTIARY_MODULE_FUNCTION);
   /* Configuring ADC Memory */
  ADC14_configureSingleSampleMode(ADC_MEM2, true);
  ADC14_configureConversionMemory(ADC_MEM2, ADC_VREFPOS_AVCC_VREFNEG_VSS, ADC_INPUT_A10, false);
   /* Set ADC result format to signed binary */
  ADC14_setResultFormat(ADC_SIGNED_BINARY);
+ ADC14_enableConversion();
+
+}
+
+void _dmaInit()
+{
+   //Timer_A_generatePWM(TIMER_A2_BASE, &pwmConfig);
  /* Configuring DMA module */
  DMA_enableModule();
  DMA_setControlBase(MSP_EXP432P401RLP_DMAControlTable);
@@ -294,7 +314,6 @@ void _dmaInit()
  /* Now that the DMA is primed and setup, enabling the channels. The ADC14
   * hardware should take over and transfer/receive all bytes */
  DMA_enableChannel(7);
- ADC14_enableConversion();
 
  hannConfig();
 
@@ -319,11 +338,12 @@ void _hwInit(){
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1); // pwm sampler, microphone 
     CS_initClockSignal(CS_ACLK, CS_REFOCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
+    _dmaInit();
     _graphicsInit();
     _adcInit();
     setHandlersGPIO();
     _buzzerInit();
-    _dmaInit();
+
 }
 
 
@@ -352,7 +372,7 @@ int main(void)
                 selectOption();
                     break;
             case 72:
-                drawBar();
+                noteDetection();
                 printChoice();
                 selectOption();
                     break;
@@ -365,11 +385,15 @@ int main(void)
         OldFlag=selectedOptionFlag;
     }
  }
+
+
+
 }
 
 void hannConfig(){
+ 
     // Initialize Hann Window
- uint8_t n;
+  int n;
  for(n = 0; n < SAMPLE_LENGTH; ++n)
  {
      hann[n] = 0.5f - 0.5f * cosf((2 * PI * n) / (SAMPLE_LENGTH - 1));
@@ -442,7 +466,6 @@ void incrementBPMvalue(){
     }else if(selectedOptionFlag & BIT5 && printedBPM < 555 ){
             printedBPM += 1;
    }
-  //  printf("\t%d\n",printedBPM);
 }
 
 void decrementBPMvalue(){
@@ -540,55 +563,48 @@ void selectedDigit(){
 }
 
 
-void drawBar(){
+void drawBar(int8_t bar){
     cleanScreen();
-    int i;
-
-    while(selectedOptionFlag !=0){
-
-
-        char note = noteDetection();
-        int bar = noteCorrection(note);
-        printf("\t%c [%d]\n", note,bar);
-        GrContextFontSet(&g_sContext, &g_sFontCm48);    //draw letter
-        Graphics_drawStringCentered(&g_sContext,(int8_t *)note,AUTO_STRING_LENGTH,64,20,OPAQUE_TEXT);           //change center
-        GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
-        switch(bar){                                    //draw bars
-            case 0:
-                 //half bar
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_GREEN);
-                    Graphics_fillRectangle(&g_sContext, &barGreenHalf);
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
-            case 1:
-                //left yellow
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_YELLOW);
-                    Graphics_fillRectangle(&g_sContext, &barYellowLeft);
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
-            case 2:
-                 //left red
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
-                    Graphics_fillRectangle(&g_sContext, &barRedLeft);
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
-            case -1:
-                 //right yellow
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_YELLOW);
-                    Graphics_fillRectangle(&g_sContext, &barYellowRight);
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
-            case -2:
-                //right red
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
-                    Graphics_fillRectangle(&g_sContext, &barRedLeft);
-                    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
-        }
-
+    switch(bar){                                    //draw bars
+        case 0:
+             //half bar
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_GREEN);
+                Graphics_fillRectangle(&g_sContext, &barGreenHalf);
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
+        case 1:
+            //left yellow
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_YELLOW);
+                Graphics_fillRectangle(&g_sContext, &barYellowLeft);
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
+        case 2:
+             //left red
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
+                Graphics_fillRectangle(&g_sContext, &barRedLeft);
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
+        case -1:
+             //right yellow
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_YELLOW);
+                Graphics_fillRectangle(&g_sContext, &barYellowRight);
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
+        case -2:
+            //right red
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
+                Graphics_fillRectangle(&g_sContext, &barRedLeft);
+                Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
     }
+
 }
 
 
-char noteDetection(){
+void noteDetection(){
+
+  _adcDmaInit();
 
   int i = 0;
 
+while (selectedOptionFlag !=0)
+{
+        PCM_gotoLPM0();
   /* Computer real FFT using the completed data buffer */
   if(switch_data & 1)
   {
@@ -618,181 +634,72 @@ char noteDetection(){
                            data_input[i]) + (data_input[i + 1] * data_input[i + 1])));
   }
   q15_t maxValue;
+  uint32_t maxIndex = 0;
+  char *note;
   arm_max_q15(data_output, fftSize, &maxValue, &maxIndex);
-  maxIndex=maxIndex*700/512;
 
-  char note = 0;
-  if(73 <= maxIndex <= 92){
-      note = 'E';
-  } else if(98 <= maxIndex <= 123){
-      note = 'A';
-  } else if(131 <= maxIndex <= 165){
-      note = 'D';
-  } else if(175 <= maxIndex <= 220){
-      note = 'G';
-  } else if(220 < maxIndex <= 277){
-      note = 'B';
-  } else if(294 <= maxIndex <= 370){
-      note = 'e';
+  printf("pre Max=%d\n",maxIndex);
+
+  float32_t indexToFreq=maxIndex*700/512;
+  printf("post Max=%f\n",indexToFreq);
+/*
+  if(73 <= indexToFreq <= 92){
+      strcpy(&note, "E");
+  } else if(98 <= indexToFreq <= 123){
+      strcpy(&note, "A");
+  } else if(131 <= indexToFreq <= 165){
+      strcpy(&note, "D");
+  } else if(175 <= indexToFreq <= 220){
+      strcpy(&note, "G");
+  } else if(220 < indexToFreq <= 277){
+      strcpy(&note, "B");
+  } else if(294 <= indexToFreq <= 370){
+      strcpy(&note, "e");
   }
-  return note;
+  drawBar(noteCorrection(note, indexToFreq));
+  GrContextFontSet(&g_sContext, &g_sFontCm48);    //draw letter
+  Graphics_drawStringCentered(&g_sContext,(int8_t *)note,AUTO_STRING_LENGTH,64,20,OPAQUE_TEXT);           //change center
+  GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
+*/
+}
+ _adcInit();
 }
 
-int noteCorrection(char note){
-  int dif;
-  int dist;
+int8_t noteCorrection(char note, float32_t maxIndex){
+  int16_t dif;
+  float32_t dist;
   switch(note){
-      case 'E':
-          dif = E - maxIndex;
-                      dist = abs(dif/E);
-                      if(dif > 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return 1;
-                          }
-                          if(dist >= 0.06){
-                              return 2;
-                          }
-                      }
-                      if(dif < 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return -1;
-                          }
-                          if(dist >= 0.06){
-                              return -2;
-                          }
-                      }
-      case 'A':
-          dif = A - maxIndex;
-                      dist = abs(dif/A);
-                      if(dif > 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return 1;
-                          }
-                          if(dist >= 0.06){
-                              return 2;
-                          }
-                      }
-                      if(dif < 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return -1;
-                          }
-                          if(dist >= 0.06){
-                              return -2;
-                          }
-                      }
-      case 'D':
-          dif = D - maxIndex;
-                      dist = abs(dif/D);
-                      if(dif > 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return 1;
-                          }
-                          if(dist >= 0.06){
-                              return 2;
-                          }
-                      }
-                      if(dif < 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return -1;
-                          }
-                          if(dist >= 0.06){
-                              return -2;
-                          }
-                      }
-      case 'G':
-          dif = G - maxIndex;
-                      dist = abs(dif/G);
-                      if(dif > 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return 1;
-                          }
-                          if(dist >= 0.06){
-                              return 2;
-                          }
-                      }
-                      if(dif < 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return -1;
-                          }
-                          if(dist >= 0.06){
-                              return -2;
-                          }
-                      }
-      case 'B':
-          dif = B - maxIndex;
-                      dist = abs(dif/B);
-                      if(dif > 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return 1;
-                          }
-                          if(dist >= 0.06){
-                              return 2;
-                          }
-                      }
-                      if(dif < 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return -1;
-                          }
-                          if(dist >= 0.06){
-                              return -2;
-                          }
-                      }
-      case 'e':
-          dif = e - maxIndex;
-                      dist = abs(dif/e);
-                      if(dif > 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return 1;
-                          }
-                          if(dist >= 0.06){
-                              return 2;
-                          }
-                      }
-                      if(dif < 0){
-                          if(dist <= 0.024){
-                              return 0;
-                          }
-                          if(0.024 < dist  < 0.06){
-                              return -1;
-                          }
-                          if(dist >= 0.06){
-                              return -2;
-                          }
-                      }
+      case 'E':     dif = E - maxIndex; dist = abs(dif/E);
+        break;
+      case 'A':     dif = A - maxIndex; dist = abs(dif/A);
+        break;
+      case 'D':     dif = D - maxIndex; dist = abs(dif/D); 
+        break;
+      case 'G':     dif = G - maxIndex; dist = abs(dif/G); 
+        break;
+      case 'B':     dif = B - maxIndex; dist = abs(dif/B); 
+        break;
+      case 'e':     dif = e - maxIndex; dist = abs(dif/e); 
+        break;
+        default: break;
   }
+ if(dif >= 0){
+     if(dist <= 0.024){
+         return 0;
+     }else if(0.024 < dist && dist  < 0.06){
+         return 1;
+     }else if(dist >= 0.06){
+         return 2;
+     }
+ }else if(dif < 0){
+     if(dist <= 0.024){
+         return 0;
+     }else if(0.024 < dist && dist < 0.06){
+         return -1;
+     }else if(dist >= 0.06){
+         return -2;
+     }
+ }else{ return 2;}
 }
 
 void buzz(){

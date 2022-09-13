@@ -589,7 +589,7 @@ void drawBar(int8_t bar){
         case -2:
             //right red
                 Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
-                Graphics_fillRectangle(&g_sContext, &barRedLeft);
+                Graphics_fillRectangle(&g_sContext, &barRedRight);
                 Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
     }
 

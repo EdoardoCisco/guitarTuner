@@ -8,9 +8,9 @@ This project was created by [@CiscoEdoardo](https://github.com/EdoardoCisco) and
 ## YouTube demonstration 🎥
 https://youtu.be/59A3gClLraM
 ## Libraries 📚
-- <br/> Grlib
-- <br/> CristalFontz
-- <br/> Arm math
+- <br/>Grlib
+- <br/>CristalFontz
+- <br/>Arm math
 
 ## Software Description 💻
 Here you have the code we wrote to make a guitar tuner using an MSP432, the idea behind the project is to use the integrated microphone in boostXL to sample fequencies, and the buzzer to make a simple methronome. The sampling of frequency is made with Fourier transform that takes volt values from microphone to frequency domain. All values taken from microphone are saved using dma to transfer data, then the launchpad starts to compute data while the microphone still saves data; when the launchpad has computed data we display on the screen of the booster pack the guitar string we suppose is being tuned and with a vertical bar the distance from the right tone. (-,+)<br/>

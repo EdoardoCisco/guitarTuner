@@ -392,7 +392,7 @@ int main(void)
 
 void hannConfig(){
  
-    // Initialize Hann Window
+  // Initialize Hann Window
   int n;
  for(n = 0; n < SAMPLE_LENGTH; ++n)
  {
@@ -714,7 +714,7 @@ void buzz(){
 /* Completion interrupt for ADC14 MEM0 */
 void DMA_INT1_IRQHandler(void)
 {
-    // /* Switch between primary and alternate bufferes with DMA's PingPong mode */
+ /* Switch between primary and alternate bufferes with DMA's PingPong mode */
  if(DMA_getChannelAttribute(7) & UDMA_ATTR_ALTSELECT)
  {
      DMA_setChannelControl(
@@ -829,11 +829,11 @@ void TA1_N_IRQHandler(void){ //metronome control
     buzz();
 }
 
-/* selectedOption Flag
+/* selectedOptionFlag
 --> 0 main
     BIT0    main selection
-    BIT1    left/Up
-    BIT2    rigt/Down
+    BIT1    
+    BIT2    
     BIT3    digit selection
     BIT4    digit selection
     BIT5    digit selection
